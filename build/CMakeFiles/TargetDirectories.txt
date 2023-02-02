@@ -1,0 +1,3 @@
+/Users/king/GitHub/Tools/build/CMakeFiles/TfToolBox.dir
+/Users/king/GitHub/Tools/build/CMakeFiles/edit_cache.dir
+/Users/king/GitHub/Tools/build/CMakeFiles/rebuild_cache.dir
