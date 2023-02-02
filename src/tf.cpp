@@ -181,7 +181,7 @@ void QuaterniondTransform(int select, Eigen::Quaterniond &quaternion) {
   }
 }
 
-bool ParseYamlFileForRotationVector(const std::string &filename, int select, std::shared_ptr<Eigen::AngleAxisd> &rotation_vector_ptr)
+bool ParseYamlFileForRotationVector(const std::string &filename, int &select, std::shared_ptr<Eigen::AngleAxisd> &rotation_vector_ptr)
 {
   YAML::Node tf = YAML::LoadFile(filename);
   try {
@@ -198,7 +198,7 @@ bool ParseYamlFileForRotationVector(const std::string &filename, int select, std
   return true;
 }
 
-bool ParseYamlFileForRotationMatrix(const std::string &filename, int select, std::shared_ptr<Eigen::Matrix3d> &rotation_matrix_ptr)
+bool ParseYamlFileForRotationMatrix(const std::string &filename, int &select, std::shared_ptr<Eigen::Matrix3d> &rotation_matrix_ptr)
 {
   YAML::Node tf = YAML::LoadFile(filename);
   try {
@@ -222,7 +222,7 @@ bool ParseYamlFileForRotationMatrix(const std::string &filename, int select, std
   return true;
 }
 
-bool ParseYamlFileForEulerAngle(const std::string &filename, int select, std::shared_ptr<Eigen::Vector3d> &eulerAngle_ptr)
+bool ParseYamlFileForEulerAngle(const std::string &filename, int &select, std::shared_ptr<Eigen::Vector3d> &eulerAngle_ptr)
 {
   YAML::Node tf = YAML::LoadFile(filename);
   try {
@@ -238,7 +238,7 @@ bool ParseYamlFileForEulerAngle(const std::string &filename, int select, std::sh
   return true;
 }
 
-bool ParseYamlFileForQuaterniond(const std::string &filename, int select, std::shared_ptr<Eigen::Quaterniond> &quaternion_ptr)
+bool ParseYamlFileForQuaterniond(const std::string &filename, int &select, std::shared_ptr<Eigen::Quaterniond> &quaternion_ptr)
 {
   YAML::Node tf = YAML::LoadFile(filename);
   try {
