@@ -1,20 +1,34 @@
-
+# 11:旋转向量转旋转矩阵
+# 12:旋转向量转欧拉角
+# 13:旋转向量转四元数
+# 21:旋转矩阵转旋转向量
+# 22:旋转矩阵转欧拉角(xyz,即RPY)
+# 23:旋转矩阵转四元数
+# 31:欧拉角转旋转向量
+# 33:欧拉角转四元数
+# 41:四元数转旋转向量
+# 42:四元数转旋转矩阵
+# 43:四元数转欧拉角(xyz,即RPY)
 select: 11
 
+# 旋转向量
 rotation_vector:
   data:
     alpha x y z
 
+旋转矩阵
 rotation_matrix:
   data:
     v00 v01 v02
     v10 v11 v12
     v20 v21 v22
 
+# 欧拉角
 euler_angle:
   data: 
     roll pitch yaw
 
+# 四元数
 quaternion:
   data: 
     x y z w
