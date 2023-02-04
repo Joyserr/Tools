@@ -1,7 +1,7 @@
-#include <iostream>
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <iostream>
+#include <sys/stat.h>
 
 #include "../include/yaml-cpp/yaml.h"
 
@@ -38,23 +38,24 @@ void GuidPrint(void) {
        << "\texample: ./TfToolBox 43 w x y z" << endl;
 }
 
-void RotationVectorTransform(int select, Eigen::AngleAxisd &rotation_vector) {
+void RotationVectorTransform(
+    int select, std::shared_ptr<Eigen::AngleAxisd> &rotation_vector) {
   switch (select) { // 旋转向量转旋转矩阵
   case 1: {
     // 旋转向量转旋转矩阵
-    Eigen::Matrix3d rotation_matrix = rotation_vector.matrix();
+    Eigen::Matrix3d rotation_matrix = rotation_vector->matrix();
     cout << "旋转矩阵:" << endl;
     cout << rotation_matrix.transpose() << endl;
     break;
   }
   case 2: {
-    Eigen::Vector3d eulerAngle = rotation_vector.matrix().eulerAngles(0, 1, 2);
+    Eigen::Vector3d eulerAngle = rotation_vector->matrix().eulerAngles(0, 1, 2);
     cout << "欧拉角:" << endl;
     cout << eulerAngle.transpose() << endl;
     break;
   }
   case 3: {
-    Eigen::Quaterniond quaternion(rotation_vector);
+    Eigen::Quaterniond quaternion(*rotation_vector);
     cout << "四元数: x, y, z, w" << endl;
     cout << quaternion.x() << " " << quaternion.y() << " " << quaternion.z()
          << " " << quaternion.w() << endl;
@@ -66,22 +67,23 @@ void RotationVectorTransform(int select, Eigen::AngleAxisd &rotation_vector) {
   }
 }
 
-void RotationMatrixTransform(int select, Eigen::Matrix3d &rotation_matrix) {
+void RotationMatrixTransform(
+    int select, std::shared_ptr<Eigen::Matrix3d> &rotation_matrix_ptr) {
   switch (select) {
   case 1: {
-    Eigen::AngleAxisd rotation_vector(rotation_matrix);
+    Eigen::AngleAxisd rotation_vector(*rotation_matrix_ptr);
     cout << "旋转向量:" << endl;
     cout << rotation_vector.matrix() << endl;
     break;
   }
   case 2: {
-    Eigen::Vector3d eulerAngle = rotation_matrix.eulerAngles(0, 1, 2);
+    Eigen::Vector3d eulerAngle = rotation_matrix_ptr->eulerAngles(0, 1, 2);
     cout << "欧拉角:" << endl;
     cout << eulerAngle.transpose() << endl;
     break;
   }
   case 3: {
-    Eigen::Quaterniond quaternion(rotation_matrix);
+    Eigen::Quaterniond quaternion(*rotation_matrix_ptr);
     cout << "四元数: x, y, z, w" << endl;
     cout << quaternion.x() << " " << quaternion.y() << " " << quaternion.z()
          << " " << quaternion.w() << endl;
@@ -92,13 +94,14 @@ void RotationMatrixTransform(int select, Eigen::Matrix3d &rotation_matrix) {
   }
 }
 
-void EulerAngleTransform(int select, Eigen::Vector3d &eulerAngle) {
+void EulerAngleTransform(int select,
+                         std::shared_ptr<Eigen::Vector3d> &eulerAngle_ptr) {
   Eigen::AngleAxisd rollAngle(
-      Eigen::AngleAxisd(eulerAngle(0), Eigen::Vector3d::UnitX()));
+      Eigen::AngleAxisd((*eulerAngle_ptr)(0), Eigen::Vector3d::UnitX()));
   Eigen::AngleAxisd pitchAngle(
-      Eigen::AngleAxisd(eulerAngle(1), Eigen::Vector3d::UnitY()));
+      Eigen::AngleAxisd((*eulerAngle_ptr)(1), Eigen::Vector3d::UnitY()));
   Eigen::AngleAxisd yawAngle(
-      Eigen::AngleAxisd(eulerAngle(2), Eigen::Vector3d::UnitZ()));
+      Eigen::AngleAxisd((*eulerAngle_ptr)(2), Eigen::Vector3d::UnitZ()));
 
   switch (select) {
   case 1: {
@@ -128,9 +131,8 @@ void EulerAngleTransform(int select, Eigen::Vector3d &eulerAngle) {
   }
 }
 
-
-void toEulerAngle(const Eigen::Quaterniond &q, double &roll, double &pitch,
-                         double &yaw) {
+void ToEulerAngle(const Eigen::Quaterniond &q, double &roll, double &pitch,
+                  double &yaw) {
   // roll (x-axis rotation)
   double sinr_cosp = +2.0 * (q.w() * q.x() + q.y() * q.z());
   double cosr_cosp = +1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y());
@@ -149,31 +151,31 @@ void toEulerAngle(const Eigen::Quaterniond &q, double &roll, double &pitch,
   yaw = atan2(siny_cosp, cosy_cosp);
 }
 
-void QuaterniondTransform(int select, Eigen::Quaterniond &quaternion) {
+void QuaterniondTransform(int select,
+                          std::shared_ptr<Eigen::Quaterniond> &quaternion_ptr) {
   switch (select) {
   case 1: {
-    Eigen::AngleAxisd rotation_vector(quaternion);
+    Eigen::AngleAxisd rotation_vector(*quaternion_ptr);
     cout << "旋转向量" << endl;
     cout << rotation_vector.matrix() << endl;
     break;
   }
   case 2: {
     Eigen::Matrix3d rotation_matrix;
-    rotation_matrix = quaternion.matrix();
+    rotation_matrix = quaternion_ptr->matrix();
     cout << "旋转矩阵" << endl;
     cout << rotation_matrix.transpose() << endl;
     break;
   }
   case 3: {
-    // Eigen::Vector3d eulerAngle = quaternion.matrix().eulerAngles(0, 1, 2);
-    // cout << "欧拉角" << endl;
-    // cout << eulerAngle.transpose() << endl;
     double roll;
     double pitch;
     double yaw;
-    toEulerAngle(quaternion, roll, pitch, yaw);
+    ToEulerAngle(*quaternion_ptr, roll, pitch, yaw);
     cout << "欧拉角" << endl;
-    cout << roll * (180.0 / PI) << " " << pitch * (180.0 / PI) << " " << yaw * (180.0 / PI) << endl;
+    cout << "roll: " << roll * (180.0 / PI) << endl
+         << "pitch: " << pitch * (180.0 / PI) << endl
+         << "yaw: " << yaw * (180.0 / PI) << endl;
     break;
   }
   default:
@@ -181,16 +183,19 @@ void QuaterniondTransform(int select, Eigen::Quaterniond &quaternion) {
   }
 }
 
-bool ParseYamlFileForRotationVector(const std::string &filename, int &select, std::shared_ptr<Eigen::AngleAxisd> &rotation_vector_ptr)
-{
+bool ParseYamlFileForRotationVector(
+    const std::string &filename,
+    std::shared_ptr<Eigen::AngleAxisd> &rotation_vector_ptr) {
   YAML::Node tf = YAML::LoadFile(filename);
   try {
-    int select = tf["select"].as<int>();
-    long double alpha = tf["rotation_vector"]["alpha"].as<long double>();
-    long double x = tf["rotation_vector"]["x"].as<long double>();
-    long double y = tf["rotation_vector"]["y"].as<long double>();
-    long double z = tf["rotation_vector"]["z"].as<long double>();
-    rotation_vector_ptr = std::make_shared<Eigen::AngleAxisd>(Eigen::AngleAxisd(alpha, Eigen::Vector3d(x, y, z)));
+    vector<long double> rotation_data =
+        tf["rotation_vector"]["data"].as<vector<long double>>();
+    long double alpha = rotation_data[0];
+    long double x = rotation_data[1];
+    long double y = rotation_data[2];
+    long double z = rotation_data[3];
+    rotation_vector_ptr = std::make_shared<Eigen::AngleAxisd>(
+        Eigen::AngleAxisd(alpha, Eigen::Vector3d(x, y, z)));
   } catch (...) {
     cout << "Extrinsic yaml file parse failed: " << filename;
     return false;
@@ -198,39 +203,45 @@ bool ParseYamlFileForRotationVector(const std::string &filename, int &select, st
   return true;
 }
 
-bool ParseYamlFileForRotationMatrix(const std::string &filename, int &select, std::shared_ptr<Eigen::Matrix3d> &rotation_matrix_ptr)
-{
+bool ParseYamlFileForRotationMatrix(
+    const std::string &filename,
+    std::shared_ptr<Eigen::Matrix3d> &rotation_matrix_ptr) {
   YAML::Node tf = YAML::LoadFile(filename);
+
   try {
-    int select = tf["select"].as<int>();
-    long double v_00 = tf["rotation_matrix"]["v_00"].as<long double>();
-    long double v_01 = tf["rotation_matrix"]["v_01"].as<long double>();
-    long double v_02 = tf["rotation_matrix"]["v_02"].as<long double>();
-    long double v_10 = tf["rotation_matrix"]["v_10"].as<long double>();
-    long double v_11 = tf["rotation_matrix"]["v_11"].as<long double>();
-    long double v_12 = tf["rotation_matrix"]["v_12"].as<long double>();
-    long double v_20 = tf["rotation_matrix"]["v_20"].as<long double>();
-    long double v_21 = tf["rotation_matrix"]["v_21"].as<long double>();
-    long double v_22 = tf["rotation_matrix"]["v_22"].as<long double>();
+    int row = tf["rotation_matrix"]["row"].as<int>();
+    int col = tf["rotation_matrix"]["col"].as<int>();
     Eigen::Matrix3d rotation_matrix;
-    rotation_matrix << v_00, v_01, v_02, v_10, v_11, v_12, v_20, v_21, v_22;
+    std::vector<long double> matrix3d_temp =
+        tf["rotation_matrix"]["data"].as<vector<long double>>();
+    assert((int)matrix3d_temp.size() == 9);
+    for (int i = 0; i < row; ++i) {
+      for (int j = 0; j < col; ++j) {
+        rotation_matrix(i, j) = matrix3d_temp[i + j * col];
+      }
+    }
     rotation_matrix_ptr = std::make_shared<Eigen::Matrix3d>(rotation_matrix);
   } catch (...) {
     cout << "Extrinsic yaml file parse failed: " << filename;
     return false;
   }
+
   return true;
 }
 
-bool ParseYamlFileForEulerAngle(const std::string &filename, int &select, std::shared_ptr<Eigen::Vector3d> &eulerAngle_ptr)
-{
+bool ParseYamlFileForEulerAngle(
+    const std::string &filename,
+    std::shared_ptr<Eigen::Vector3d> &eulerAngle_ptr) {
   YAML::Node tf = YAML::LoadFile(filename);
+
   try {
-    int select = tf["select"].as<int>();
-    long double roll = tf["euler_angle"]["roll"].as<long double>();
-    long double pitch = tf["euler_angle"]["pitch"].as<long double>();
-    long double yaw = tf["euler_angle"]["yaw"].as<long double>();
-    eulerAngle_ptr = std::make_shared<Eigen::Vector3d>(Eigen::Vector3d(roll, pitch, yaw));
+    vector<long double> euler_angle_data =
+        tf["euler_angle"]["data"].as<vector<long double>>();
+    auto roll = euler_angle_data[0];
+    auto pitch = euler_angle_data[1];
+    auto yaw = euler_angle_data[2];
+    eulerAngle_ptr =
+        std::make_shared<Eigen::Vector3d>(Eigen::Vector3d(roll, pitch, yaw));
   } catch (...) {
     cout << "Extrinsic yaml file parse failed: " << filename;
     return false;
@@ -238,16 +249,20 @@ bool ParseYamlFileForEulerAngle(const std::string &filename, int &select, std::s
   return true;
 }
 
-bool ParseYamlFileForQuaterniond(const std::string &filename, int &select, std::shared_ptr<Eigen::Quaterniond> &quaternion_ptr)
-{
+bool ParseYamlFileForQuaterniond(
+    const std::string &filename,
+    std::shared_ptr<Eigen::Quaterniond> &quaternion_ptr) {
   YAML::Node tf = YAML::LoadFile(filename);
+
   try {
-    int select = tf["select"].as<int>();
-    long double x = tf["quaternion"]["x"].as<long double>();
-    long double y = tf["quaternion"]["y"].as<long double>();
-    long double z = tf["quaternion"]["z"].as<long double>();
-    long double w = tf["quaternion"]["w"].as<long double>();
-    quaternion_ptr = std::make_shared<Eigen::Quaterniond>(Eigen::Quaterniond(w, x, y, z));
+    vector<long double> quaternion_data =
+        tf["quaternion"]["data"].as<vector<long double>>();
+    auto x = quaternion_data[0];
+    auto y = quaternion_data[1];
+    auto z = quaternion_data[2];
+    auto w = quaternion_data[3];
+    quaternion_ptr =
+        std::make_shared<Eigen::Quaterniond>(Eigen::Quaterniond(x, y, z, w));
   } catch (...) {
     cout << "Extrinsic yaml file parse failed: " << filename;
     return false;
@@ -256,69 +271,54 @@ bool ParseYamlFileForQuaterniond(const std::string &filename, int &select, std::
 }
 
 int main(int argc, char **argv) {
-  GuidPrint();
-  if (argc < 2) {
+  if (argc != 2) {
     cout << "Parameter error" << endl;
-    exit(EXIT_SUCCESS);
+    cout << "Example: ./TfToolBox path/file.yaml" << endl;
+    return 0;
   }
 
-  if (0 == strcmp(argv[2], "help")) {
-    GuidPrint();
+  // int select = atoi(argv[1]);
+  string filename = argv[1];
+  struct stat buffer;
+  if (stat(filename.c_str(), &buffer) != 0) {
+    cout << "Error:" << filename << " file does not exist" << endl;
+    return 1;
   }
-
-  int select = atoi(argv[1]);
-
+  YAML::Node tf = YAML::LoadFile(filename);
+  int select = tf["select"].as<int>();
   switch (select / 10) {
-  case 1: //旋转向量相关变换
+  case 1: // 旋转向量相关变换
   {
-    long double alpha = stold(argv[2]);
-    long double x = stold(argv[3]);
-    long double y = stold(argv[4]);
-    long double z = stold(argv[5]);
-    cout << "alpha = " << alpha << " x = " << x << " y = " << y << " z = " << z
-         << endl;
-    // 初始化旋转向量
-    Eigen::AngleAxisd rotation_vector(alpha, Eigen::Vector3d(x, y, z));
-    RotationVectorTransform(select % 10, rotation_vector);
+    std::shared_ptr<Eigen::AngleAxisd> rotation_vector_ptr;
+    if (true != ParseYamlFileForRotationVector(filename, rotation_vector_ptr)) {
+      return 1;
+    }
+    RotationVectorTransform(select % 10, rotation_vector_ptr);
     break;
   }
   case 2: // 旋转矩阵
   {
-    long double v_00 = stold(argv[2]);
-    long double v_01 = stold(argv[3]);
-    long double v_02 = stold(argv[4]);
-    long double v_10 = stold(argv[5]);
-    long double v_11 = stold(argv[6]);
-    long double v_12 = stold(argv[7]);
-    long double v_20 = stold(argv[8]);
-    long double v_21 = stold(argv[9]);
-    long double v_22 = stold(argv[10]);
-    cout << "v_00 " << v_00 << " v_01 " << v_01 << " v_02 " << v_02 << endl;
-    cout << "v_10 " << v_10 << " v_11 " << v_11 << " v_12 " << v_12 << endl;
-    cout << "v_20 " << v_20 << " v_21 " << v_21 << " v_22 " << v_22 << endl;
-    Eigen::Matrix3d rotation_matrix;
-    rotation_matrix << v_00, v_01, v_02, v_10, v_11, v_12, v_20, v_21, v_22;
-    RotationMatrixTransform(select % 10, rotation_matrix);
+    std::shared_ptr<Eigen::Matrix3d> rotation_matrix_ptr;
+    if (true != ParseYamlFileForRotationMatrix(filename, rotation_matrix_ptr)) {
+      return 1;
+    }
+    RotationMatrixTransform(select % 10, rotation_matrix_ptr);
     break;
   }
   case 3: {
-    long double roll = stold(argv[2]);
-    long double pitch = stold(argv[3]);
-    long double yaw = stold(argv[4]);
-    cout << "roll = " << roll << " pitch = " << pitch << " yaw = " << yaw
-         << endl;
-    Eigen::Vector3d eulerAngle(roll, pitch, yaw);
-    EulerAngleTransform(select % 10, eulerAngle);
+    std::shared_ptr<Eigen::Vector3d> eulerAngle_ptr;
+    if (true != ParseYamlFileForEulerAngle(filename, eulerAngle_ptr)) {
+      return 1;
+    }
+    EulerAngleTransform(select % 10, eulerAngle_ptr);
     break;
   }
   case 4: {
-    long double w = stold(argv[2]);
-    long double x = stold(argv[3]);
-    long double y = stold(argv[4]);
-    long double z = stold(argv[5]);
-    cout << "w = " << w << " x = " << x << " y = " << y << " z = " << z << endl;
-    Eigen::Quaterniond quaternion(w, x, y, z);
-    QuaterniondTransform(select % 10, quaternion);
+    std::shared_ptr<Eigen::Quaterniond> quaternion_ptr;
+    if (true != ParseYamlFileForQuaterniond(filename, quaternion_ptr)) {
+      return 1;
+    }
+    QuaterniondTransform(select % 10, quaternion_ptr);
     break;
   }
   default:
